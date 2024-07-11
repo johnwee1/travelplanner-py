@@ -64,7 +64,7 @@ def render_availability_calendar(date_range, person):
         )
 
 
-def render_user_availabilities(selected_users, date_range, Persons):
+def render_user_availabilities(date_range, Persons):
     columns = st.columns(
         len(st.session_state.selected_users), vertical_alignment="bottom"
     )
@@ -76,8 +76,15 @@ def render_user_availabilities(selected_users, date_range, Persons):
 
 def main():
     st.title("Availability Checker")
-
-    url = st.text_input("Enter the URL of the Google Sheets document")
+    st.write(
+        "Having trouble planning something with friends? Here's the solution nobody asked for!"
+    )
+    st.write(
+        "Note: Your Google form WILL need the fields 'name' and 'availabilities' for this to work. Also yeah its case-sensitive, smaller case only."
+    )
+    url = st.text_input(
+        "Enter the URL of the Google Sheets document you want to visualize!"
+    )
     retrieve_data = st.button("Retrieve Data")
 
     if "Persons" not in st.session_state:
@@ -90,7 +97,9 @@ def main():
         st.session_state.Persons = query.retrieve_db(url)
 
     if st.session_state.Persons:
-        selected_date = st.date_input("Select a date", datetime.date.today())
+        selected_date = st.date_input(
+            "Select a date. Dates +-10 days will be displayed", datetime.date.today()
+        )
         st.session_state.selected_users = st.multiselect(
             "Select users",
             list(st.session_state.Persons.keys()),
@@ -103,9 +112,7 @@ def main():
                 start_date + datetime.timedelta(days=x)
                 for x in range((end_date - start_date).days + 1)
             ]
-            render_user_availabilities(
-                st.session_state.selected_users, date_range, st.session_state.Persons
-            )
+            render_user_availabilities(date_range, st.session_state.Persons)
 
 
 if __name__ == "__main__":
