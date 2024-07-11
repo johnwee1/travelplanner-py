@@ -45,6 +45,3 @@ def retrieve_db(url) -> dict[str, Person]:
         db[entry.name].update_availability(str(entry.availabilities))
 
     return db
-
-
-print(retrieve_db("test"))
