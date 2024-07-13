@@ -1,31 +1,32 @@
 import re
 from datetime import datetime, timedelta
+from typing import List
 
 
-class Person:
-    def __init__(self, name):
-        self.name = name
-        self.available_dates = []
-
-    def update_availability(self, dates):
+class DateParser:
+    @staticmethod
+    def update_availability(current_dates, new_dates):
         """Update the availability of the person with a given date string"""
-        self.available_dates = self._parse_dates(dates)
+        return DateParser._parse_dates(current_dates, new_dates)
 
-    def _parse_dates(self, datestr: str) -> list:
-        dates = re.split("\n|,", datestr)
-        available_ranges = self.available_dates
+    @staticmethod
+    def _parse_dates(available_dates: List, datestr: str) -> List[str]:
+        dates = re.split("\n|,", datestr.strip())
+        available_ranges = available_dates
         unavailable_ranges = []
         for s in dates:
             if s.startswith("x"):
-                unavailable_ranges.extend(self._enumerate_days_in_range(s[1:]))
+                unavailable_ranges.extend(DateParser._enumerate_days_in_range(s[1:]))
             else:
-                available_ranges.extend(self._enumerate_days_in_range(s))
+                available_ranges.extend(DateParser._enumerate_days_in_range(s))
         return sorted(list(set(available_ranges) - set(unavailable_ranges)))
 
-    def _enumerate_days_in_range(self, date_or_range) -> list:
+    @staticmethod
+    def _enumerate_days_in_range(date_or_range: str) -> List[str]:
         d = date_or_range.split("-")
         if len(d) == 1:
-            return d[0]
+            return d
+
         start_date_str = d[0]
         end_date_str = d[1]
         assert len(d) == 2, f"Invalid date range: {date_or_range}"
@@ -49,15 +50,3 @@ class Person:
         except ValueError as e:
             print(f"Invalid date format: {e}")
         return []
-
-    def print_dates(self):
-        print(self.available_dates)
-
-
-if __name__ == "__main__":
-    EXAMPLE = """01/12/24-16/12/24,18/20/24-20/12/24
-x05/12/24
-x12/12/24-15/12/24"""
-    nm = Person("Test")
-    nm.update_availability(EXAMPLE)
-    nm.print_dates()

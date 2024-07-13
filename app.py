@@ -3,9 +3,9 @@ import datetime
 import query
 
 
-def get_date_range(selected_date):
-    start_date = selected_date - datetime.timedelta(days=10)
-    end_date = selected_date + datetime.timedelta(days=10)
+def get_date_range(selected_date, n):
+    start_date = selected_date - datetime.timedelta(days=n)
+    end_date = selected_date + datetime.timedelta(days=n)
     return start_date, end_date
 
 
@@ -41,16 +41,18 @@ def render_user_column(user, index, total_users):
         sc3.button("➡", key=f"{user}_right", on_click=move_right, args=(index,))
 
 
-def render_availability_calendar(date_range, person):
+def render_availability_calendar(date_range, user):
     for date in date_range:
-        color = "green" if is_available(date, person.available_dates) else "white"
+        color = (
+            "#54ff82" if is_available(date, st.session_state.db[user]) else "#242424"
+        )
         st.markdown(
             f"""
             <span style="
                 display: inline-block;
                 width: 60px;
                 height: 60px;
-                border-radius: 10px;
+                border-radius: 6px;
                 background-color: {color};
                 color: #474747;
                 font-size: 24px;
@@ -64,14 +66,14 @@ def render_availability_calendar(date_range, person):
         )
 
 
-def render_user_availabilities(date_range, Persons):
+def render_user_availabilities(date_range):
     columns = st.columns(
         len(st.session_state.selected_users), vertical_alignment="bottom"
     )
     for i, user in enumerate(st.session_state.selected_users):
         with columns[i]:
             render_user_column(user, i, len(st.session_state.selected_users))
-            render_availability_calendar(date_range, Persons[user])
+            render_availability_calendar(date_range, user)
 
 
 def main():
@@ -85,34 +87,47 @@ def main():
     url = st.text_input(
         "Enter the URL of the Google Sheets document you want to visualize!"
     )
-    retrieve_data = st.button("Retrieve Data")
+    retrieve_data = st.button("Get Started")
 
-    if "Persons" not in st.session_state:
-        st.session_state.Persons = None
+    if "db" not in st.session_state:
+        st.session_state.db = None
 
     if "selected_users" not in st.session_state:
         st.session_state.selected_users = []
 
     if retrieve_data:
-        st.session_state.Persons = query.retrieve_db(url)
+        st.session_state.db = query.retrieve_db(url)
 
-    if st.session_state.Persons:
-        selected_date = st.date_input(
-            "Select a date. Dates +-10 days will be displayed", datetime.date.today()
-        )
+    if st.session_state.db:
+        show_db = st.checkbox(label="Show all users", value=False)
+        if show_db:
+            st.dataframe(st.session_state.db)
+
+        selected_date = st.date_input("Select a date to check", datetime.date.today())
+
         st.session_state.selected_users = st.multiselect(
             "Select users",
-            list(st.session_state.Persons.keys()),
+            list(st.session_state.db.keys()),
             default=st.session_state.selected_users,
         )
 
+        if "interval" not in st.session_state:
+            st.session_state.interval = 10
+
+        interval = st.number_input(
+            label="The number of days out from the day specified to display",
+            min_value=1,
+            max_value=30,
+            value=st.session_state.interval,
+        )
+
         if st.session_state.selected_users:
-            start_date, end_date = get_date_range(selected_date)
+            start_date, end_date = get_date_range(selected_date, interval)
             date_range = [
-                start_date + datetime.timedelta(days=x)
-                for x in range((end_date - start_date).days + 1)
+                start_date + datetime.timedelta(days=i)
+                for i in range((end_date - start_date).days + 1)
             ]
-            render_user_availabilities(date_range, st.session_state.Persons)
+            render_user_availabilities(date_range)
 
 
 if __name__ == "__main__":

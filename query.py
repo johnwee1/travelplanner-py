@@ -1,6 +1,6 @@
 import requests, io, re, logging
 import pandas as pd
-from parsedates import Person
+from parsedates import DateParser
 
 # CHANGE YOUR CONSTANTS HERE
 """NOTE: This script fails if no "name" and "availabilities" columns exist."""
@@ -31,7 +31,7 @@ def process_sheets_url(url):
         )
 
 
-def retrieve_db(url) -> dict[str, Person]:
+def retrieve_db(url) -> dict[str, DateParser]:
     raw_csv = requests.get(process_sheets_url(url)).content.decode("utf-8")
     df = pd.read_csv(io.StringIO(raw_csv))
     # df = pd.read_csv("form.csv")
@@ -39,9 +39,8 @@ def retrieve_db(url) -> dict[str, Person]:
     db = {}
 
     for entry in df.itertuples():
-        print(entry.name)
-        if entry.name not in db:
-            db[entry.name] = Person(entry.name)
-        db[entry.name].update_availability(str(entry.availabilities))
+        db[entry.name] = DateParser.update_availability(
+            db.get(entry.name, []), str(entry.availabilities)
+        )
 
     return db
